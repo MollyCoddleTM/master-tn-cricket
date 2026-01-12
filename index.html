@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
-  <title>Master TN Cricket (v8)</title>
+  <title>Master TN Cricket (v9)</title>
   <style>
     :root{
       --bg: #0b0f17;
@@ -678,10 +678,11 @@
     currentTurnLogs[playerIdx].push(line);
   }
 
-  function dartButton(label, onClick, cls=""){
+  function dartButton(label, onClick, cls="", key=null){
     const b = document.createElement("button");
     b.type = "button";
     b.className = "dart " + cls;
+    if (key !== null) b.dataset.key = String(key);
     b.textContent = label;
     b.addEventListener("click", onClick);
     return b;
@@ -699,8 +700,7 @@
         addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
         state = applyThrow(state, { target:{type:"number", value:n}, multiplier:selectedMultiplier });
         render();
-      });
-      if (String(n) === activeKey) btn.classList.add("activeTarget");
+      }, "", String(n));
       grid.appendChild(btn);
     }
 
@@ -710,8 +710,7 @@
       addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
       state = applyThrow(state, { target:{type:"bull"}, multiplier:selectedMultiplier });
       render();
-    }, "bull");
-    if ("BULL" === activeKey) bullBtn.classList.add("activeTarget");
+    }, "bull", "BULL");
     grid.appendChild(bullBtn);
 
     grid.appendChild(dartButton("MISS", () => {
@@ -720,7 +719,7 @@
       addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
       state = applyThrow(state, { target:{type:"miss"}, multiplier:0 });
       render();
-    }, "miss"));
+    }, "miss", "MISS"));
   }
 
   function renderHeader(){
@@ -829,10 +828,20 @@
     table.innerHTML = header + rows;
   }
 
-  function render(){
+  
+  function updateActiveTargetHighlight(){
+    const activeKey = state.sequence[state.activeIndex];
+    document.querySelectorAll('#targetsGrid .dart').forEach(btn => {
+      const key = btn.dataset.key || null;
+      btn.classList.toggle('activeTarget', key === activeKey);
+    });
+  }
+
+function render(){
     renderHeader();
     renderLeader();
     renderBanner();
+    updateActiveTargetHighlight();
     renderTurnLogs();
     renderTable();
 
