@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
-  <title>Master TN Cricket (v19)</title>
+  <title>Master TN Cricket (v23)</title>
   <style>
     :root{
       --bg: #0b0f17;
@@ -480,11 +480,11 @@
       <div class="sectionTitle">Logy</div>
       <div class="logs">
         <div class="logBox">
-          <div class="logTitle">Aktuální kolo – tento hráč</div>
+          <div class="logTitle" id="currentTurnTitle">Aktuální kolo – tento hráč</div>
           <pre id="currentTurnLog" class="log">–</pre>
         </div>
         <div class="logBox">
-          <div class="logTitle">Předchozí hráč – poslední kolo</div>
+          <div class="logTitle" id="previousTurnTitle">Předchozí hráč – poslední kolo</div>
           <pre id="previousTurnLog" class="log">–</pre>
         </div>
       </div>
@@ -937,12 +937,28 @@
     });
   }
 
+
+  function updateLogTitles(){
+    const curIdx = state.currentPlayerIndex;
+    const prevIdx = (curIdx - 1 + state.players.length) % state.players.length;
+
+    const curName = (state.players[curIdx] && state.players[curIdx].name) ? state.players[curIdx].name : ("Player " + (curIdx+1));
+    const prevName = (state.players[prevIdx] && state.players[prevIdx].name) ? state.players[prevIdx].name : ("Player " + (prevIdx+1));
+
+    const curTitleEl = $("currentTurnTitle");
+    if (curTitleEl) curTitleEl.textContent = "Aktuální kolo – " + curName;
+
+    const prevTitleEl = $("previousTurnTitle");
+    if (prevTitleEl) prevTitleEl.textContent = "Předchozí hráč – " + prevName + " (poslední kolo)";
+  }
+
 function render(){
     renderHeader();
     renderLeader();
     renderBanner();
     updateActiveTargetHighlight();
     renderTurnLogs();
+    updateLogTitles();
     renderTable();
     wireReorderButtons();
 
