@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
-  <title>Master TN Cricket (v9)</title>
+  <title>Master TN Cricket (v19)</title>
   <style>
     :root{
       --bg: #0b0f17;
@@ -366,6 +366,35 @@
       color: var(--text);
     }
 
+
+    .reorderBtns{
+      display:inline-flex;
+      gap:6px;
+      margin-left:auto;
+    }
+    .miniBtn{
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      color: var(--text);
+      cursor:pointer;
+      font-weight:750;
+      line-height:1;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .miniBtn:disabled{ opacity:.45; cursor:not-allowed; }
+    @media (prefers-color-scheme: light){
+      .miniBtn{ background: rgba(255,255,255,.65); }
+    }
+
+
+    .orderLockNote{
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 14px 12px 14px;
+    }
+
     .banner{
       margin: 10px 14px 0 14px;
       padding: 10px 12px;
@@ -482,6 +511,7 @@
   <section class="card">
     <div class="sectionTitle">Stav</div>
     <div id="leaderInfo" class="leader"></div>
+    <div id="orderLockNote" class="orderLockNote"></div>
     <div class="tableWrap">
       <table id="stateTable"></table>
     </div>
@@ -625,6 +655,7 @@
   let state = makeGame(["Player 1","Player 2"]);
   let history = [];
   let selectedMultiplier = 1;
+  let hasStarted = false;
 
   let currentTurnLogs = {};
   let lastTurnLogs = {};
@@ -638,6 +669,7 @@
       selectedMultiplier,
       currentTurnLogs: JSON.parse(JSON.stringify(currentTurnLogs)),
       lastTurnLogs: JSON.parse(JSON.stringify(lastTurnLogs)),
+      hasStarted,
     };
   }
 
@@ -646,6 +678,7 @@
     selectedMultiplier = snap.selectedMultiplier;
     currentTurnLogs = snap.currentTurnLogs || {};
     lastTurnLogs = snap.lastTurnLogs || {};
+    hasStarted = !!snap.hasStarted;
     setMultiplier(selectedMultiplier, true);
   }
 
@@ -698,6 +731,7 @@
         pushHistory();
         const sc = scoringForThrow({type:"number", value:n}, selectedMultiplier);
         addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
+        if (!hasStarted) hasStarted = true;
         state = applyThrow(state, { target:{type:"number", value:n}, multiplier:selectedMultiplier });
         render();
       }, "", String(n));
@@ -708,6 +742,7 @@
       pushHistory();
       const sc = scoringForThrow({type:"bull"}, selectedMultiplier);
       addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
+      if (!hasStarted) hasStarted = true;
       state = applyThrow(state, { target:{type:"bull"}, multiplier:selectedMultiplier });
       render();
     }, "bull", "BULL");
@@ -717,6 +752,7 @@
       pushHistory();
       const sc = scoringForThrow({type:"miss"}, 0);
       addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
+      if (!hasStarted) hasStarted = true;
       state = applyThrow(state, { target:{type:"miss"}, multiplier:0 });
       render();
     }, "miss", "MISS"));
@@ -776,6 +812,7 @@
     currentTurnLogs = {};
     lastTurnLogs = {};
     state = makeGame(names);
+    hasStarted = false;
     setMultiplier(1);
     render();
   }
@@ -809,12 +846,16 @@
       const cell = (k) => `${p.hits[k] ?? 0}/3`;
       const done = allNumbersClosed(p) ? " <span class=\"pill\">DONE</span>" : "";
       return `
-        <tr>
+        <tr data-index="${idx}">
           <td>
           <div class="playerCell">
             <b>${mark}${escapeHtml(p.name)}</b>
             <span class="penaltyBadge">${p.penalty}</span>
             ${idx === state.currentPlayerIndex ? '<span class="activeBadge">na řadě</span>' : ''}
+            <span class="reorderBtns">
+              <button type="button" class="miniBtn" data-move="up" title="Nahoru">↑</button>
+              <button type="button" class="miniBtn" data-move="down" title="Dolů">↓</button>
+            </span>
             ${done}
           </div>
         </td>
@@ -837,6 +878,65 @@
     });
   }
 
+
+  function movePlayer(fromIdx, toIdx){
+    if (hasStarted) return;
+    fromIdx = Number(fromIdx);
+    toIdx = Number(toIdx);
+    if (!Number.isFinite(fromIdx) || !Number.isFinite(toIdx)) return;
+    if (fromIdx === toIdx) return;
+
+    const n = state.players.length;
+    if (fromIdx < 0 || fromIdx >= n || toIdx < 0 || toIdx >= n) return;
+
+    const players = [...state.players];
+    const [moved] = players.splice(fromIdx, 1);
+    players.splice(toIdx, 0, moved);
+
+    const remapLogs = (logsObj) => {
+      const arr = Array.from({length:n}, (_,i)=> logsObj[i] || []);
+      const [mv] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, mv);
+      const out = {};
+      arr.forEach((v,i)=> out[i] = v);
+      return out;
+    };
+
+    currentTurnLogs = remapLogs(currentTurnLogs);
+    lastTurnLogs = remapLogs(lastTurnLogs);
+
+    state = { ...state, players, currentPlayerIndex: 0 };
+  }
+
+  function wireReorderButtons(){
+    const note = $("orderLockNote");
+    if (note){
+      note.textContent = hasStarted
+        ? "Pořadí hráčů je zamčeno (hra už začala)."
+        : "Pořadí hráčů můžeš upravit šipkami ↑/↓ u jména (zamkne se po prvním hodu).";
+    }
+
+    document.querySelectorAll("#stateTable tr[data-index]").forEach((row) => {
+      if (!row.querySelector) return;
+      const idxAttr = row.getAttribute("data-index");
+      if (idxAttr === null) return;
+      const idx = Number(idxAttr);
+
+      row.querySelectorAll(".miniBtn").forEach(btn => {
+        btn.disabled = hasStarted;
+        btn.onclick = (ev) => {
+          ev.preventDefault();
+          if (hasStarted) return;
+          const dir = btn.dataset.move;
+          const to = dir === "up" ? idx - 1 : idx + 1;
+          pushHistory();
+          movePlayer(idx, to);
+          render();
+        };
+      });
+    });
+  }
+
 function render(){
     renderHeader();
     renderLeader();
@@ -844,6 +944,7 @@ function render(){
     updateActiveTargetHighlight();
     renderTurnLogs();
     renderTable();
+    wireReorderButtons();
 
     const finished = gameFinished(state);
     document.querySelectorAll("#targetsGrid button").forEach(b => b.disabled = finished);
@@ -871,17 +972,18 @@ function render(){
 
     $("nextPlayer").addEventListener("click", doNext);
     $("prevPlayer").addEventListener("click", doPrev);
-    $("undo").addEventListener("click", () => { pushHistory(); undo(); });
+    $("undo").addEventListener("click", () => { undo(); });
 
     $("bbNext").addEventListener("click", doNext);
     $("bbPrev").addEventListener("click", doPrev);
-    $("bbUndo").addEventListener("click", () => { pushHistory(); undo(); });
+    $("bbUndo").addEventListener("click", () => { undo(); });
 
     $("resetSame").addEventListener("click", () => {
       history = [];
       currentTurnLogs = {};
       lastTurnLogs = {};
       state = resetSamePlayers(state);
+      hasStarted = false;
       setMultiplier(1);
       render();
     });
@@ -892,6 +994,7 @@ function render(){
       lastTurnLogs = {};
       $("playerCount").value = 2;
       state = makeGame(["Player 1","Player 2"]);
+      hasStarted = false;
       setMultiplier(1);
       renderPlayerInputs();
       render();
