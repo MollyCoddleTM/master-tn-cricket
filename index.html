@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
-  <title>Master TN Cricket (v5)</title>
+  <title>Master TN Cricket (v6)</title>
   <style>
     :root{
       --bg: #0b0f17;
@@ -327,6 +327,30 @@
       padding: 0 14px 12px 14px;
     }
 
+
+    .playerCell{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+    }
+    .penaltyBadge{
+      background: rgba(239,68,68,.18);
+      border: 1px solid rgba(239,68,68,.5);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-weight: 750;
+      font-size: 12px;
+    }
+    .activeBadge{
+      background: rgba(124,58,237,.18);
+      border: 1px solid rgba(124,58,237,.5);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
     .banner{
       margin: 10px 14px 0 14px;
       padding: 10px 12px;
@@ -367,7 +391,7 @@
       <div class="topbar">
         <div class="title">
           <h1>Master TN Cricket</h1>
-          <div class="sub">Responzivní verze pro telefon: velká tlačítka, posuvná tabulka, nastavení v rozbalovacím panelu.</div>
+          <div class="sub">Responzivní verze pro telefon: penalty jsou u jmen hráčů v tabulce.</div>
         </div>
         <div class="actions">
           <button id="resetSame" class="btn">Reset (stejní)</button>
@@ -757,7 +781,7 @@
         <th>Hráč</th>
         <th>Aktivní ${active}</th>
         <th>20</th><th>19</th><th>18</th><th>17</th><th>16</th><th>15</th><th>BULL</th>
-        <th>Penalty</th>
+        
       </tr>
     `;
 
@@ -767,10 +791,17 @@
       const done = allNumbersClosed(p) ? " <span class=\"pill\">DONE</span>" : "";
       return `
         <tr>
-          <td>${mark}${escapeHtml(p.name)}${done}</td>
+          <td>
+          <div class="playerCell">
+            <b>${mark}${escapeHtml(p.name)}</b>
+            <span class="penaltyBadge">${p.penalty}</span>
+            ${idx === state.currentPlayerIndex ? '<span class="activeBadge">na řadě</span>' : ''}
+            ${done}
+          </div>
+        </td>
           <td><b>${cell(active)}</b></td>
           <td>${cell("20")}</td><td>${cell("19")}</td><td>${cell("18")}</td><td>${cell("17")}</td><td>${cell("16")}</td><td>${cell("15")}</td><td>${cell("BULL")}</td>
-          <td><b>${p.penalty}</b></td>
+          
         </tr>
       `;
     }).join("");
