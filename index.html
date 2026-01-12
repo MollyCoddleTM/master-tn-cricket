@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+  <title>Master TN Cricket (v5)</title>
+  <style>
+    :root{
+      --bg: #0b0f17;
+      --surface: rgba(255,255,255,.06);
+      --surface2: rgba(255,255,255,.10);
+      --border: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --accent: #7c3aed;
+      --accent2: #22c55e;
+      --danger: #ef4444;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+
+    /* Light mode fallback */
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f7f7fb;
+        --surface: rgba(0,0,0,.04);
+        --surface2: rgba(0,0,0,.06);
+        --border: rgba(0,0,0,.10);
+        --text: rgba(0,0,0,.90);
+        --muted: rgba(0,0,0,.55);
+        --accent:#6d28d9;
+        --accent2:#16a34a;
+        --danger:#dc2626;
+        --shadow: 0 10px 24px rgba(0,0,0,.12);
+      }
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(124,58,237,.35), transparent 60%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(34,197,94,.20), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      padding: 14px;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    }
+
+    .app{
+      max-width: 1100px;
+      margin: 0 auto;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, var(--surface2), var(--surface));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .pad{ padding: 14px; }
+
+    .topbar{
+      display:flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      min-width: 0;
+    }
+    h1{
+      font-size: 18px;
+      margin:0;
+      letter-spacing: .2px;
+    }
+    .sub{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .statusRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 8px;
+    }
+
+    .pill{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      backdrop-filter: blur(6px);
+    }
+    @media (prefers-color-scheme: light){
+      .pill{ background: rgba(255,255,255,.6); }
+    }
+
+    .pill b{ font-weight: 700; }
+    .pill .k{ color: var(--muted); font-size: 12px; }
+
+    .seg{
+      display:flex;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow:hidden;
+      background: rgba(0,0,0,.08);
+    }
+    @media (prefers-color-scheme: light){
+      .seg{ background: rgba(255,255,255,.6); }
+    }
+    .seg button{
+      border:0;
+      background: transparent;
+      color: var(--text);
+      padding: 10px 12px;
+      font-weight: 650;
+      cursor: pointer;
+      min-width: 56px;
+    }
+    .seg button.active{
+      background: linear-gradient(180deg, rgba(124,58,237,.9), rgba(124,58,237,.65));
+      border-left: 1px solid rgba(255,255,255,.08);
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+
+    .actions{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn{
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-weight: 650;
+      transition: transform .04s ease, background .15s ease;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (prefers-color-scheme: light){
+      .btn{ background: rgba(255,255,255,.6); }
+    }
+
+    .btn:active{ transform: translateY(1px); }
+    .btn.danger{ border-color: rgba(239,68,68,.55); color: #fff; background: rgba(239,68,68,.22); }
+    .btn.primary{ border-color: rgba(124,58,237,.55); background: rgba(124,58,237,.22); }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 860px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    .sectionTitle{
+      font-size: 12px;
+      color: var(--muted);
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Dartboard grid */
+    .board{ padding: 14px; }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(44px, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: repeat(5, minmax(56px, 1fr)); gap: 10px; }
+    }
+    @media (max-width: 420px){
+      .grid{ grid-template-columns: repeat(4, minmax(56px, 1fr)); }
+    }
+
+    .dart{
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      color: var(--text);
+      padding: 14px 0;
+      font-size: 16px;
+      font-weight: 750;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,.18);
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (prefers-color-scheme: light){
+      .dart{ background: rgba(255,255,255,.65); }
+    }
+    .dart:active{ transform: translateY(1px); }
+    .dart.bull{ border-color: rgba(34,197,94,.5); background: rgba(34,197,94,.18); }
+    .dart.miss{ border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.18); }
+
+    /* Logs */
+    .logs{
+      padding: 14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 860px){
+      .logs{ grid-template-columns: 1fr; }
+    }
+    .logBox{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0,0,0,.08);
+      padding: 12px;
+    }
+    @media (prefers-color-scheme: light){
+      .logBox{ background: rgba(255,255,255,.65); }
+    }
+    .logTitle{ font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .log{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      margin:0;
+      min-height: 68px;
+    }
+
+    /* Settings */
+    details{ border-top: 1px solid var(--border); }
+    details summary{
+      list-style:none;
+      cursor:pointer;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 12px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      user-select:none;
+    }
+    details summary::-webkit-details-marker{ display:none; }
+    details[open] summary{ color: var(--text); }
+    .settingsPad{ padding: 0 14px 14px 14px; }
+
+    .fieldRow{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .input{
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      color: var(--text);
+      padding: 10px 12px;
+      width: 110px;
+    }
+    @media (prefers-color-scheme: light){
+      .input{ background: rgba(255,255,255,.65); }
+    }
+    .nameGrid{
+      margin-top: 10px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 860px){
+      .nameGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 420px){
+      .nameGrid{ grid-template-columns: 1fr; }
+    }
+    .nameGrid input{ width:100%; }
+
+    /* Score table */
+    .tableWrap{
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    th{ color: var(--muted); font-weight: 650; background: rgba(0,0,0,.06); position: sticky; top: 0; }
+    @media (prefers-color-scheme: light){
+      th{ background: rgba(255,255,255,.6); }
+    }
+
+    .leader{
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 14px 12px 14px;
+    }
+
+    .banner{
+      margin: 10px 14px 0 14px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(34,197,94,.45);
+      background: rgba(34,197,94,.14);
+      color: var(--text);
+    }
+    .banner.hidden{ display:none; }
+
+    /* Mobile sticky bottom bar for fast actions */
+    .bottomBar{
+      display:none;
+      position: sticky;
+      bottom: 10px;
+      margin: 0 0 0 0;
+      padding: 10px;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    @media (max-width: 860px){
+      .bottomBar{ display:flex; }
+    }
+    .bottomBar .btn{ flex:1; text-align:center; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <section class="card">
+    <div class="pad">
+      <div class="topbar">
+        <div class="title">
+          <h1>Master TN Cricket</h1>
+          <div class="sub">Responzivní verze pro telefon: velká tlačítka, posuvná tabulka, nastavení v rozbalovacím panelu.</div>
+        </div>
+        <div class="actions">
+          <button id="resetSame" class="btn">Reset (stejní)</button>
+          <button id="resetAll" class="btn danger">Úplný reset</button>
+        </div>
+      </div>
+
+      <div id="statusBanner" class="banner hidden"></div>
+
+      <div class="statusRow">
+        <div class="pill"><span class="k">Aktivní</span> <b id="activeNumber">-</b> <span class="k" id="activeIndexInfo"></span></div>
+        <div class="pill"><span class="k">Na řadě</span> <b id="currentPlayer">-</b></div>
+
+        <div class="seg" aria-label="Multiplier">
+          <button id="btnS" class="active" type="button">S</button>
+          <button id="btnD" type="button">D</button>
+          <button id="btnT" type="button">T</button>
+        </div>
+
+        <div class="actions">
+          <button id="prevPlayer" class="btn">◀ Prev</button>
+          <button id="nextPlayer" class="btn primary">Next ▶</button>
+          <button id="undo" class="btn danger">Undo</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="layout">
+
+    <section class="card">
+      <div class="sectionTitle">Zápis šipky</div>
+      <div class="board">
+        <div class="grid" id="targetsGrid"></div>
+        <div class="sub" style="margin-top:10px;">
+          Penalty za špatný zásah = hodnota zásahu (číslo × multiplier; BULL = 25×multiplier). MISS = 25.
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">Logy</div>
+      <div class="logs">
+        <div class="logBox">
+          <div class="logTitle">Aktuální kolo – tento hráč</div>
+          <pre id="currentTurnLog" class="log">–</pre>
+        </div>
+        <div class="logBox">
+          <div class="logTitle">Předchozí hráč – poslední kolo</div>
+          <pre id="previousTurnLog" class="log">–</pre>
+        </div>
+      </div>
+
+      <details>
+        <summary>
+          Nastavení hráčů
+          <span class="k">1–10 hráčů</span>
+        </summary>
+        <div class="settingsPad">
+          <div class="fieldRow">
+            <label class="tiny muted">Počet hráčů</label>
+            <input id="playerCount" class="input" type="number" min="1" max="10" value="2" />
+            <button id="applyPlayers" class="btn">Použít</button>
+          </div>
+          <div id="playerInputs" class="nameGrid"></div>
+          <div class="sub" style="margin-top:10px;">Tip: prázdné jméno = Player 1…</div>
+        </div>
+      </details>
+    </section>
+
+  </div>
+
+  <section class="card">
+    <div class="sectionTitle">Stav</div>
+    <div id="leaderInfo" class="leader"></div>
+    <div class="tableWrap">
+      <table id="stateTable"></table>
+    </div>
+  </section>
+
+  <div class="bottomBar">
+    <button id="bbPrev" class="btn">◀ Prev</button>
+    <button id="bbNext" class="btn primary">Next ▶</button>
+    <button id="bbUndo" class="btn danger">Undo</button>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // ===== Rules / Engine =====
+  const SEQUENCE = ["20","19","18","17","16","15","BULL"];
+  const MISS_PENALTY = 25;
+
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (s) => String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+
+  function makePlayer(name){
+    const hits = Object.fromEntries(SEQUENCE.map(k => [k, 0]));
+    return { name, hits, penalty: 0 };
+  }
+  function makeGame(playerNames){
+    return { sequence:[...SEQUENCE], activeIndex:0, currentPlayerIndex:0, players: playerNames.map(makePlayer) };
+  }
+  function keyFromTarget(target){
+    if (target.type === "number") return String(target.value);
+    if (target.type === "bull") return "BULL";
+    return "MISS";
+  }
+  function everyoneClosed(players, key){
+    return players.every(p => clamp(p.hits[key] ?? 0, 0, 3) >= 3);
+  }
+  function allNumbersClosed(player){
+    return SEQUENCE.every(k => clamp(player.hits[k] ?? 0, 0, 3) >= 3);
+  }
+  function gameFinished(state){
+    return state.players.every(allNumbersClosed);
+  }
+  function winnerIndexIfFinished(state){
+    if (!gameFinished(state)) return null;
+    let best = 0;
+    for (let i=1;i<state.players.length;i++){
+      if (state.players[i].penalty < state.players[best].penalty) best = i;
+    }
+    return best;
+  }
+  function leaderIndex(state){
+    let best = 0;
+    for (let i=1;i<state.players.length;i++){
+      if (state.players[i].penalty < state.players[best].penalty) best = i;
+    }
+    return best;
+  }
+
+  function scoringForThrow(target, multiplier){
+    const key = keyFromTarget(target);
+
+    if (key === "MISS"){
+      return { hits: 0, perHitValue: 0, scoredValue: MISS_PENALTY, key };
+    }
+    if (key === "BULL"){
+      const hits = clamp(multiplier ?? 1, 1, 2); // S/D only
+      const perHitValue = 25;
+      return { hits, perHitValue, scoredValue: perHitValue * hits, key };
+    }
+    const num = Number(key);
+    const hits = clamp(multiplier ?? 1, 1, 3);
+    const perHitValue = num;
+    return { hits, perHitValue, scoredValue: perHitValue * hits, key };
+  }
+
+  function applyThrow(state, dart){
+    const activeKey = state.sequence[state.activeIndex];
+    const throwerIdx = state.currentPlayerIndex;
+
+    const players = state.players.map(p => ({...p, hits:{...p.hits}}));
+    const thrower = players[throwerIdx];
+
+    const sc = scoringForThrow(dart.target, dart.multiplier);
+    const targetKey = sc.key;
+
+    const addPenalty = (idx, pts) => { if (pts > 0) players[idx].penalty += pts; };
+
+    const addHitsReturnOverflow = (player, key, hitsToAdd) => {
+      const current = clamp(player.hits[key] ?? 0, 0, 3);
+      const needed = 3 - current;
+      const use = Math.min(hitsToAdd, needed);
+      const overflow = hitsToAdd - use;
+      if (use > 0) player.hits[key] = current + use;
+      return overflow;
+    };
+
+    const isActiveHit = (targetKey === activeKey);
+
+    if (!isActiveHit){
+      addPenalty(throwerIdx, sc.scoredValue);
+    } else {
+      const currentHits = clamp(thrower.hits[activeKey] ?? 0, 0, 3);
+
+      let overflowHits = 0;
+      if (currentHits < 3) overflowHits = addHitsReturnOverflow(thrower, activeKey, sc.hits);
+      else overflowHits = sc.hits;
+
+      if (overflowHits > 0){
+        const overflowValue = overflowHits * sc.perHitValue;
+        for (let i=0;i<players.length;i++){
+          const h = clamp(players[i].hits[activeKey] ?? 0, 0, 3);
+          if (h < 3) addPenalty(i, overflowValue);
+        }
+      }
+    }
+
+    let newActiveIndex = state.activeIndex;
+    while (newActiveIndex < state.sequence.length - 1 &&
+          everyoneClosed(players, state.sequence[newActiveIndex])) {
+      newActiveIndex++;
+    }
+
+    return { ...state, players, activeIndex: newActiveIndex };
+  }
+
+  function nextPlayer(state){
+    const n = state.players.length;
+    return { ...state, currentPlayerIndex: (state.currentPlayerIndex + 1) % n };
+  }
+  function prevPlayer(state){
+    const n = state.players.length;
+    return { ...state, currentPlayerIndex: (state.currentPlayerIndex - 1 + n) % n };
+  }
+  function resetSamePlayers(state){
+    return makeGame(state.players.map(p => p.name));
+  }
+
+  // ===== UI state + Undo (includes logs) =====
+  let state = makeGame(["Player 1","Player 2"]);
+  let history = [];
+  let selectedMultiplier = 1;
+
+  let currentTurnLogs = {};
+  let lastTurnLogs = {};
+
+  function snapshot(){
+    return {
+      state: {
+        ...state,
+        players: state.players.map(p => ({...p, hits: {...p.hits}})),
+      },
+      selectedMultiplier,
+      currentTurnLogs: JSON.parse(JSON.stringify(currentTurnLogs)),
+      lastTurnLogs: JSON.parse(JSON.stringify(lastTurnLogs)),
+    };
+  }
+
+  function restore(snap){
+    state = snap.state;
+    selectedMultiplier = snap.selectedMultiplier;
+    currentTurnLogs = snap.currentTurnLogs || {};
+    lastTurnLogs = snap.lastTurnLogs || {};
+    setMultiplier(selectedMultiplier, true);
+  }
+
+  function pushHistory(){
+    history.push(snapshot());
+    if (history.length > 1000) history.shift();
+  }
+
+  function undo(){
+    if (history.length === 0) return;
+    restore(history.pop());
+    render();
+  }
+
+  function setMultiplier(m){
+    selectedMultiplier = m;
+    $("btnS").classList.toggle("active", m===1);
+    $("btnD").classList.toggle("active", m===2);
+    $("btnT").classList.toggle("active", m===3);
+  }
+
+  function formatThrowLabel(sc){
+    if (sc.key === "MISS") return "MISS = 25";
+    if (sc.key === "BULL") return `${sc.hits}×BULL = ${sc.scoredValue}`;
+    return `${sc.hits}×${sc.key} = ${sc.scoredValue}`;
+  }
+
+  function addToCurrentTurnLog(playerIdx, line){
+    if (!currentTurnLogs[playerIdx]) currentTurnLogs[playerIdx] = [];
+    currentTurnLogs[playerIdx].push(line);
+  }
+
+  function dartButton(label, onClick, cls=""){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "dart " + cls;
+    b.textContent = label;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function renderTargets(){
+    const grid = $("targetsGrid");
+    grid.innerHTML = "";
+
+    for (let n=20; n>=1; n--){
+      grid.appendChild(dartButton(String(n), () => {
+        pushHistory();
+        const sc = scoringForThrow({type:"number", value:n}, selectedMultiplier);
+        addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
+        state = applyThrow(state, { target:{type:"number", value:n}, multiplier:selectedMultiplier });
+        render();
+      }));
+    }
+
+    grid.appendChild(dartButton("BULL", () => {
+      pushHistory();
+      const sc = scoringForThrow({type:"bull"}, selectedMultiplier);
+      addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
+      state = applyThrow(state, { target:{type:"bull"}, multiplier:selectedMultiplier });
+      render();
+    }, "bull"));
+
+    grid.appendChild(dartButton("MISS", () => {
+      pushHistory();
+      const sc = scoringForThrow({type:"miss"}, 0);
+      addToCurrentTurnLog(state.currentPlayerIndex, formatThrowLabel(sc));
+      state = applyThrow(state, { target:{type:"miss"}, multiplier:0 });
+      render();
+    }, "miss"));
+  }
+
+  function renderHeader(){
+    const active = state.sequence[state.activeIndex];
+    $("activeNumber").textContent = active;
+    $("activeIndexInfo").textContent = `${state.activeIndex+1}/${state.sequence.length}`;
+    $("currentPlayer").textContent = state.players[state.currentPlayerIndex]?.name ?? "-";
+    $("undo").disabled = history.length === 0;
+  }
+
+  function renderBanner(){
+    const banner = $("statusBanner");
+    const w = winnerIndexIfFinished(state);
+    if (w === null){
+      banner.classList.add("hidden");
+      banner.textContent = "";
+      return;
+    }
+    banner.classList.remove("hidden");
+    banner.textContent = `Konec hry. Vyhrává ${state.players[w].name} s ${state.players[w].penalty} trestnými body.`;
+  }
+
+  function renderLeader(){
+    const idx = leaderIndex(state);
+    const p = state.players[idx];
+    $("leaderInfo").textContent = `Průběžně vede (nejméně trestů): ${p.name} (${p.penalty}).`;
+  }
+
+  function renderPlayerInputs(){
+    const wrap = $("playerInputs");
+    wrap.innerHTML = "";
+
+    const count = clamp(Number($("playerCount").value || 2), 1, 10);
+    $("playerCount").value = count;
+
+    const currentNames = state.players.map(p => p.name);
+
+    for (let i=0;i<count;i++){
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "input";
+      input.placeholder = `Player ${i+1}`;
+      input.value = (currentNames[i] && !currentNames[i].startsWith("Player ")) ? currentNames[i] : (currentNames[i] ?? "");
+      input.dataset.idx = String(i);
+      wrap.appendChild(input);
+    }
+  }
+
+  function applyPlayersFromInputs(){
+    const inputs = [...$("playerInputs").querySelectorAll("input[type=text]")];
+    const names = inputs.map((inp, i) => (inp.value ?? "").trim() || `Player ${i+1}`);
+
+    history = [];
+    currentTurnLogs = {};
+    lastTurnLogs = {};
+    state = makeGame(names);
+    setMultiplier(1);
+    render();
+  }
+
+  function renderTurnLogs(){
+    const curIdx = state.currentPlayerIndex;
+    const prevIdx = (curIdx - 1 + state.players.length) % state.players.length;
+
+    const cur = (currentTurnLogs[curIdx] || []).join("\n");
+    const prev = (lastTurnLogs[prevIdx] || []).join("\n");
+
+    $("currentTurnLog").textContent = cur.length ? cur : "–";
+    $("previousTurnLog").textContent = prev.length ? prev : "–";
+  }
+
+  function renderTable(){
+    const active = state.sequence[state.activeIndex];
+    const table = $("stateTable");
+
+    const header = `
+      <tr>
+        <th>Hráč</th>
+        <th>Aktivní ${active}</th>
+        <th>20</th><th>19</th><th>18</th><th>17</th><th>16</th><th>15</th><th>BULL</th>
+        <th>Penalty</th>
+      </tr>
+    `;
+
+    const rows = state.players.map((p, idx) => {
+      const mark = (idx === state.currentPlayerIndex) ? "👉 " : "";
+      const cell = (k) => `${p.hits[k] ?? 0}/3`;
+      const done = allNumbersClosed(p) ? " <span class=\"pill\">DONE</span>" : "";
+      return `
+        <tr>
+          <td>${mark}${escapeHtml(p.name)}${done}</td>
+          <td><b>${cell(active)}</b></td>
+          <td>${cell("20")}</td><td>${cell("19")}</td><td>${cell("18")}</td><td>${cell("17")}</td><td>${cell("16")}</td><td>${cell("15")}</td><td>${cell("BULL")}</td>
+          <td><b>${p.penalty}</b></td>
+        </tr>
+      `;
+    }).join("");
+
+    table.innerHTML = header + rows;
+  }
+
+  function render(){
+    renderHeader();
+    renderLeader();
+    renderBanner();
+    renderTurnLogs();
+    renderTable();
+
+    const finished = gameFinished(state);
+    document.querySelectorAll("#targetsGrid button").forEach(b => b.disabled = finished);
+    $("undo").disabled = history.length === 0;
+  }
+
+  function doNext(){
+    pushHistory();
+    const idx = state.currentPlayerIndex;
+    lastTurnLogs[idx] = currentTurnLogs[idx] || [];
+    currentTurnLogs[idx] = [];
+    state = nextPlayer(state);
+    render();
+  }
+  function doPrev(){
+    pushHistory();
+    state = prevPlayer(state);
+    render();
+  }
+
+  function wire(){
+    $("btnS").addEventListener("click", () => setMultiplier(1));
+    $("btnD").addEventListener("click", () => setMultiplier(2));
+    $("btnT").addEventListener("click", () => setMultiplier(3));
+
+    $("nextPlayer").addEventListener("click", doNext);
+    $("prevPlayer").addEventListener("click", doPrev);
+    $("undo").addEventListener("click", () => { pushHistory(); undo(); });
+
+    $("bbNext").addEventListener("click", doNext);
+    $("bbPrev").addEventListener("click", doPrev);
+    $("bbUndo").addEventListener("click", () => { pushHistory(); undo(); });
+
+    $("resetSame").addEventListener("click", () => {
+      history = [];
+      currentTurnLogs = {};
+      lastTurnLogs = {};
+      state = resetSamePlayers(state);
+      setMultiplier(1);
+      render();
+    });
+
+    $("resetAll").addEventListener("click", () => {
+      history = [];
+      currentTurnLogs = {};
+      lastTurnLogs = {};
+      $("playerCount").value = 2;
+      state = makeGame(["Player 1","Player 2"]);
+      setMultiplier(1);
+      renderPlayerInputs();
+      render();
+    });
+
+    $("applyPlayers").addEventListener("click", () => applyPlayersFromInputs());
+    $("playerCount").addEventListener("change", () => renderPlayerInputs());
+  }
+
+  function init(){
+    setMultiplier(1);
+    renderTargets();
+    renderPlayerInputs();
+    wire();
+    render();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+</body>
+</html>
